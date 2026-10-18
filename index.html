@@ -1,0 +1,1886 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BEPTur - Dados Operacionais</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- PapaParse -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            beptur: {
+              900: '#020617',
+              800: '#0a1a3d',
+              700: '#0f2b5e',
+              600: '#153d82',
+              500: '#1e4fa6',
+              400: '#2a6bc9',
+              300: '#5b9de8',
+              200: '#9ecaf5',
+              100: '#d6e9fb',
+              50: '#eef6fd',
+            },
+            danger: '#dc2626',
+            success: '#16a34a',
+            warning: '#facc15'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background: radial-gradient(circle at 20% 20%, rgba(21, 61, 130, 0.25) 0%, transparent 50%),
+                  radial-gradient(circle at 85% 10%, rgba(220, 38, 38, 0.15) 0%, transparent 45%),
+                  radial-gradient(circle at 50% 95%, rgba(250, 204, 21, 0.12) 0%, transparent 45%),
+                  linear-gradient(180deg, #020617 0%, #0a1628 50%, #050914 100%);
+      background-attachment: fixed;
+      min-height: 100vh;
+      color: #f8fafc;
+    }
+
+    .glass {
+      background: rgba(10, 22, 40, 0.65);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(191, 202, 219, 0.18);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    }
+
+    .glass-strong {
+      background: rgba(10, 22, 40, 0.82);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(191, 202, 219, 0.22);
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .select-beptur, .toggle-beptur {
+      background: rgba(10, 22, 40, 0.75);
+      color: #f8fafc;
+      border: 1px solid rgba(191, 202, 219, 0.2);
+      transition: all 0.2s ease;
+    }
+
+    .select-beptur:hover, .select-beptur:focus,
+    .toggle-beptur:hover, .toggle-beptur.active {
+      border-color: #2563eb;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+    }
+
+    .toggle-beptur.active {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.4), rgba(30, 58, 138, 0.5));
+      color: #fff;
+      text-shadow: 0 0 8px rgba(96, 165, 250, 0.5);
+    }
+
+    .kpi-card {
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      border-left: 4px solid transparent;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 20px rgba(37, 99, 235, 0.15);
+    }
+
+    .kpi-card:nth-child(1) { border-left-color: #2563eb; }
+    .kpi-card:nth-child(2) { border-left-color: #dc2626; }
+    .kpi-card:nth-child(3) { border-left-color: #facc15; }
+    .kpi-card:nth-child(4) { border-left-color: #60a5fa; }
+    .kpi-card:nth-child(5) { border-left-color: #94a3b8; }
+
+    .chart-container {
+      position: relative;
+      height: 360px;
+      width: 100%;
+    }
+
+    .chart-container-sm {
+      position: relative;
+      height: 260px;
+      width: 100%;
+    }
+
+    .loader {
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #6b93e6;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .data-table {
+      border-collapse: separate;
+      border-spacing: 0;
+      width: 100%;
+    }
+
+    .data-table th,
+    .data-table td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .data-table th {
+      color: #a8c0f0;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .data-table td {
+      color: #e2e8f0;
+      font-size: 0.875rem;
+    }
+
+    .data-table tbody tr:hover td {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge-positivo { background: rgba(37, 99, 235, 0.22); color: #93c5fd; box-shadow: 0 0 10px rgba(37, 99, 235, 0.25); }
+    .badge-negativo { background: rgba(220, 38, 38, 0.22); color: #fca5a5; box-shadow: 0 0 10px rgba(220, 38, 38, 0.25); }
+
+    .tab-btn {
+      color: #94a3b8;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+    }
+
+    .tab-btn:hover { color: #e2e8f0; background: rgba(255,255,255,0.05); }
+
+    .tab-btn.active {
+      color: #fff;
+      border-bottom-color: #2563eb;
+      background: rgba(37, 99, 235, 0.15);
+    }
+
+    .tab-content.hidden { display: none; }
+
+    input[type="date"].select-beptur {
+      color-scheme: dark;
+    }
+
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.5rem;
+      background: rgba(37, 99, 235, 0.2);
+      color: #bfdbfe;
+      border: 1px solid rgba(37, 99, 235, 0.4);
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    .filter-chip:hover {
+      background: rgba(220, 38, 38, 0.25);
+      border-color: rgba(220, 38, 38, 0.5);
+      color: #fecaca;
+    }
+
+    .chart-card { position: relative; }
+
+    .chart-max-btn {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      padding: 0.25rem;
+      color: #94a3b8;
+      background: rgba(255,255,255,0.05);
+      border-radius: 0.375rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      line-height: 0;
+    }
+
+    .chart-max-btn:hover {
+      color: #fff;
+      background: rgba(37, 99, 235, 0.25);
+    }
+
+    #chart-modal:not(.hidden) { display: flex; }
+
+    #modal-chart {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    canvas { cursor: pointer; }
+  </style>
+</head>
+<body class="antialiased">
+
+  <!-- Header -->
+  <header class="glass-strong sticky top-0 z-50 px-6 py-4">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <img src="BEPTUR.png" alt="BEPTur" class="h-16 w-auto object-contain drop-shadow-lg" />
+        <div>
+          <h1 class="text-2xl md:text-3xl font-bold tracking-tight text-white">BEPTur</h1>
+          <p class="text-sm text-beptur-200 font-medium">Dados operacionais</p>
+        </div>
+      </div>
+      <div class="text-right">
+        <div id="clock-time" class="text-2xl font-bold tabular-nums text-white">--:--:--</div>
+        <div id="clock-date" class="text-sm text-beptur-200">Carregando data...</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="max-w-7xl mx-auto px-4 md:px-6 py-8">
+
+    <!-- Loading State -->
+    <section id="loading-section" class="flex flex-col items-center justify-center py-20">
+      <div class="loader mb-4"></div>
+      <p class="text-beptur-200 text-sm">Carregando dados operacionais...</p>
+    </section>
+
+    <!-- Error State -->
+    <section id="error-section" class="hidden glass rounded-2xl p-8 text-center">
+      <div class="text-red-400 text-5xl mb-3">⚠</div>
+      <h2 class="text-xl font-semibold mb-2">Não foi possível carregar os dados</h2>
+      <p id="error-message" class="text-slate-300 text-sm mb-4">Verifique o link da planilha e tente novamente.</p>
+      <button onclick="app.loadData()" class="px-5 py-2.5 bg-beptur-600 hover:bg-beptur-500 text-white rounded-lg font-medium transition-colors">
+        Tentar novamente
+      </button>
+    </section>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="hidden space-y-6">
+
+      <!-- Filters & Controls -->
+      <section class="glass rounded-2xl p-5 fade-in">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+            <svg class="w-5 h-5 text-beptur-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+            Filtros e controles
+          </h2>
+          <button onclick="app.clearFilters()" class="text-xs px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-beptur-100 transition-colors">
+            Limpar filtros
+          </button>
+        </div>
+
+        <div class="mb-5 pb-4 border-b border-white/10">
+          <h3 class="text-xs font-bold text-beptur-200 uppercase tracking-wider mb-3">Período</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="flex flex-col gap-1">
+              <label for="filter-mes" class="text-xs font-medium text-beptur-200">MÊS</label>
+              <select id="filter-mes" class="select-beptur rounded-lg px-3 py-2 text-sm"><option value="">Todos</option></select>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label for="filter-trimestre" class="text-xs font-medium text-beptur-200">TRIMESTRE</label>
+              <select id="filter-trimestre" class="select-beptur rounded-lg px-3 py-2 text-sm"><option value="">Todos</option></select>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label for="filter-data-inicio" class="text-xs font-medium text-beptur-200">DATA INÍCIO</label>
+              <input id="filter-data-inicio" type="date" class="select-beptur rounded-lg px-3 py-2 text-sm" />
+            </div>
+            <div class="flex flex-col gap-1">
+              <label for="filter-data-fim" class="text-xs font-medium text-beptur-200">DATA FIM</label>
+              <input id="filter-data-fim" type="date" class="select-beptur rounded-lg px-3 py-2 text-sm" />
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-5 pb-4 border-b border-white/10">
+          <h3 class="text-xs font-bold text-beptur-200 uppercase tracking-wider mb-3">Ocorrência</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="flex flex-col gap-1">
+              <label for="filter-local" class="text-xs font-medium text-beptur-200">LOCAL</label>
+              <select id="filter-local" class="select-beptur rounded-lg px-3 py-2 text-sm"><option value="">Todos</option></select>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label for="filter-indicador" class="text-xs font-medium text-beptur-200">INDICADOR</label>
+              <select id="filter-indicador" class="select-beptur rounded-lg px-3 py-2 text-sm"><option value="">Todos</option></select>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label for="filter-tipo" class="text-xs font-medium text-beptur-200">TIPO</label>
+              <select id="filter-tipo" class="select-beptur rounded-lg px-3 py-2 text-sm"><option value="">Todos</option></select>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label for="filter-cia" class="text-xs font-medium text-beptur-200">CIA</label>
+              <select id="filter-cia" class="select-beptur rounded-lg px-3 py-2 text-sm"><option value="">Todas</option></select>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 mb-4">
+          <span class="text-xs font-medium text-beptur-200">Modo:</span>
+          <button id="mode-qtd" class="toggle-beptur px-3 py-1.5 rounded-md text-xs font-medium" onclick="app.setMode('qtd')">
+            Soma de QTD
+          </button>
+          <button id="mode-count" class="toggle-beptur active px-3 py-1.5 rounded-md text-xs font-medium" onclick="app.setMode('count')">
+            Contagem de ocorrências
+          </button>
+
+        </div>
+
+        <div id="active-filters" class="flex flex-wrap gap-2 hidden">
+          <span class="text-xs font-medium text-beptur-200 self-center">Filtros ativos:</span>
+        </div>
+      </section>
+
+      <!-- KPIs -->
+      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 fade-in">
+        <div class="glass kpi-card rounded-2xl p-5">
+          <p class="text-xs font-medium text-beptur-200 uppercase tracking-wider" id="kpi-total-label">Total de Ocorrências</p>
+          <p id="kpi-total" class="text-3xl font-bold text-white mt-1">0</p>
+        </div>
+        <div class="glass kpi-card rounded-2xl p-5">
+          <p class="text-xs font-medium text-beptur-200 uppercase tracking-wider">Local com Maior Incidência</p>
+          <p id="kpi-local" class="text-lg font-bold text-white mt-1 break-words leading-tight">-</p>
+          <p id="kpi-local-qtd" class="text-sm text-beptur-300">0</p>
+        </div>
+        <div class="glass kpi-card rounded-2xl p-5">
+          <p class="text-xs font-medium text-beptur-200 uppercase tracking-wider">Companhia com Maior Ocorrências</p>
+          <p id="kpi-cia" class="text-lg font-bold text-white mt-1 break-words leading-tight">-</p>
+          <p id="kpi-cia-qtd" class="text-sm text-beptur-300">0</p>
+        </div>
+        <div class="glass kpi-card rounded-2xl p-5">
+          <p class="text-xs font-medium text-beptur-200 uppercase tracking-wider">Média Diária</p>
+          <p id="kpi-media" class="text-3xl font-bold text-white mt-1">0</p>
+        </div>
+        <div class="glass kpi-card rounded-2xl p-5">
+          <p class="text-xs font-medium text-beptur-200 uppercase tracking-wider">Var. vs Mês Anterior</p>
+          <p id="kpi-var-mes" class="text-3xl font-bold text-white mt-1">-</p>
+          <p id="kpi-var-mes-label" class="text-sm text-beptur-300">--</p>
+        </div>
+        <div class="glass kpi-card rounded-2xl p-5">
+          <p class="text-xs font-medium text-beptur-200 uppercase tracking-wider">Var. vs Trim. Anterior</p>
+          <p id="kpi-var-trim" class="text-3xl font-bold text-white mt-1">-</p>
+          <p id="kpi-var-trim-label" class="text-sm text-beptur-300">--</p>
+        </div>
+      </section>
+
+      <!-- Charts Grid -->
+      <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 fade-in">
+
+        <!-- Line Chart -->
+        <div class="glass chart-card rounded-2xl p-5">
+          <button class="chart-max-btn" onclick="app.openChartModal('evolucao')" title="Maximizar">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+          </button>
+          <h3 class="text-base font-semibold text-white mb-4" id="title-evolucao">Evolução ao longo do tempo</h3>
+          <div class="chart-container"><canvas id="chart-evolucao"></canvas></div>
+        </div>
+
+        <!-- Monthly Comparison Chart -->
+        <div class="glass chart-card rounded-2xl p-5">
+          <button class="chart-max-btn" onclick="app.openChartModal('mensal')" title="Maximizar">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+          </button>
+          <h3 class="text-base font-semibold text-white mb-4">Comparativo Mensal (ano a ano)</h3>
+          <div class="chart-container"><canvas id="chart-mensal"></canvas></div>
+        </div>
+
+        <!-- Quarterly Comparison Chart -->
+        <div class="glass chart-card rounded-2xl p-5">
+          <button class="chart-max-btn" onclick="app.openChartModal('trimestral')" title="Maximizar">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+          </button>
+          <h3 class="text-base font-semibold text-white mb-4">Comparativo Trimestral (ano a ano)</h3>
+          <div class="chart-container"><canvas id="chart-trimestral"></canvas></div>
+        </div>
+
+        <!-- Horizontal Bar Chart -->
+        <div class="glass chart-card rounded-2xl p-5">
+          <button class="chart-max-btn" onclick="app.openChartModal('locais')" title="Maximizar">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+          </button>
+          <h3 class="text-base font-semibold text-white mb-4" id="title-locais">Top 5 Locais</h3>
+          <div class="chart-container"><canvas id="chart-locais"></canvas></div>
+        </div>
+
+        <!-- Doughnut Chart -->
+        <div class="glass chart-card rounded-2xl p-5">
+          <button class="chart-max-btn" onclick="app.openChartModal('cia')" title="Maximizar">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+          </button>
+          <h3 class="text-base font-semibold text-white mb-4">Distribuição por Companhia (CIA)</h3>
+          <div class="chart-container"><canvas id="chart-cia"></canvas></div>
+        </div>
+
+        <!-- Vertical Bar Chart -->
+        <div class="glass chart-card rounded-2xl p-5">
+          <button class="chart-max-btn" onclick="app.openChartModal('indicador')" title="Maximizar">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+          </button>
+          <h3 class="text-base font-semibold text-white mb-4">Ocorrências por Indicador</h3>
+          <div class="chart-container"><canvas id="chart-indicador"></canvas></div>
+        </div>
+
+        <!-- Positivo vs Negativo -->
+        <div class="glass chart-card rounded-2xl p-5">
+          <button class="chart-max-btn" onclick="app.openChartModal('tipo')" title="Maximizar">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+          </button>
+          <h3 class="text-base font-semibold text-white mb-4">Positivo vs Negativo ao longo do tempo</h3>
+          <div class="chart-container"><canvas id="chart-tipo"></canvas></div>
+        </div>
+
+        <!-- Ranking indicadores sem drogas -->
+        <div class="glass chart-card rounded-2xl p-5">
+          <button class="chart-max-btn" onclick="app.openChartModal('indicador-sec')" title="Maximizar">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+          </button>
+          <h3 class="text-base font-semibold text-white mb-4">Indicadores (sem Drogas Apreendidas)</h3>
+          <div class="chart-container"><canvas id="chart-indicador-sec"></canvas></div>
+        </div>
+      </section>
+
+      <!-- Data Table -->
+      <section class="glass rounded-2xl p-5 fade-in">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-base font-semibold text-white">Registros detalhados</h3>
+          <span id="table-count" class="text-xs text-beptur-200">0 registros</span>
+        </div>
+
+        <div class="flex flex-wrap gap-2 mb-4 border-b border-white/10 pb-3" id="table-tabs">
+          <button class="tab-btn active px-4 py-2 text-sm font-medium rounded-t-lg transition-colors" data-tab="todos" onclick="app.switchTableTab('todos')">Todos</button>
+          <button class="tab-btn px-4 py-2 text-sm font-medium rounded-t-lg transition-colors" data-tab="indicador" onclick="app.switchTableTab('indicador')">Por Indicador</button>
+          <button class="tab-btn px-4 py-2 text-sm font-medium rounded-t-lg transition-colors" data-tab="local" onclick="app.switchTableTab('local')">Por Local</button>
+          <button class="tab-btn px-4 py-2 text-sm font-medium rounded-t-lg transition-colors" data-tab="cia" onclick="app.switchTableTab('cia')">Por CIA</button>
+        </div>
+
+        <div id="tab-todos" class="tab-content">
+          <div class="overflow-x-auto rounded-xl border border-white/10">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Local</th>
+                  <th>Indicador</th>
+                  <th>Tipo</th>
+                  <th>QTD</th>
+                  <th>CIA</th>
+                  <th>Aba</th>
+                </tr>
+              </thead>
+              <tbody id="table-body">
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="tab-indicador" class="tab-content hidden">
+          <div class="overflow-x-auto rounded-xl border border-white/10">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Indicador</th>
+                  <th>Ocorrências</th>
+                  <th>Total QTD</th>
+                  <th>% do Total</th>
+                  <th>Top Local</th>
+                  <th>Top CIA</th>
+                </tr>
+              </thead>
+              <tbody id="table-body-indicador">
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="tab-local" class="tab-content hidden">
+          <div class="overflow-x-auto rounded-xl border border-white/10">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Local</th>
+                  <th>Ocorrências</th>
+                  <th>Total QTD</th>
+                  <th>Top Indicador</th>
+                  <th>Top CIA</th>
+                </tr>
+              </thead>
+              <tbody id="table-body-local">
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="tab-cia" class="tab-content hidden">
+          <div class="overflow-x-auto rounded-xl border border-white/10">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>CIA</th>
+                  <th>Ocorrências</th>
+                  <th>Total QTD</th>
+                  <th>Top Indicador</th>
+                  <th>Top Local</th>
+                </tr>
+              </thead>
+              <tbody id="table-body-cia">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="max-w-7xl mx-auto px-6 py-6 text-center text-xs text-beptur-200">
+    BEPTur - Dados operacionais · Dashboard atualizado em tempo real
+  </footer>
+
+  <script>
+    /**
+     * BEPTur Dashboard
+     * SPA estática para análise de dados operacionais consumindo CSV do Google Sheets.
+     */
+
+    // ============================================================
+    // CONFIGURAÇÃO
+    // ============================================================
+
+    // URL de publicação CSV e gids das abas a carregar.
+    const PUB_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRT1LB6Z7QrsDUeeDHE4SP0C37EFnmQ4znSa29hEyKn7wKkcc2N8n7TZIjRNaoPr5uGVGlDwghj5cf3/pub';
+    const SHEET_GIDS = [
+      607871534, 1138514132, 1913271914, 1442209172, 473155963,
+      858812739, 2062338488, 1323602421, 224459948
+    ];
+
+    const getSheetUrl = (gid) =>
+      `${PUB_CSV_URL}?gid=${gid}&single=true&output=csv`;
+
+    // ============================================================
+    // UTILITÁRIOS
+    // ============================================================
+
+    const formatNumber = (n) => new Intl.NumberFormat('pt-BR').format(Math.round(n));
+
+    const parseDateBR = (str) => {
+      if (!str) return null;
+      const [d, m, y] = str.split('/').map(Number);
+      if (!d || !m || !y) return null;
+      return new Date(y, m - 1, d);
+    };
+
+    const brToISO = (str) => {
+      const dt = parseDateBR(str);
+      if (!dt) return '';
+      return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+    };
+
+    const isoToBR = (iso) => {
+      if (!iso) return '';
+      const [y, m, d] = iso.split('-').map(Number);
+      if (!y || !m || !d) return '';
+      return `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`;
+    };
+
+    const sortByDateAsc = (a, b) => parseDateBR(a.DATA) - parseDateBR(b.DATA);
+
+    const dateToBR = (date) =>
+      `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+
+    const getDateRange = (rows) => {
+      const dates = rows.map((r) => parseDateBR(r.DATA)).filter(Boolean);
+      if (!dates.length) return [];
+      const min = new Date(Math.min(...dates));
+      const max = new Date(Math.max(...dates));
+      const out = [];
+      for (const d = new Date(min); d <= max; d.setDate(d.getDate() + 1)) {
+        out.push(dateToBR(d));
+      }
+      return out;
+    };
+
+    const uniqueSorted = (arr, key) => {
+      const values = new Set(arr.map((item) => item[key]).filter(Boolean));
+      return [...values].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    };
+
+    const mesesAbrev = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+
+    const formatMesRef = (mesAno) => {
+      const [m, y] = mesAno.split('/').map(Number);
+      if (!m || !y) return mesAno;
+      return `${mesesAbrev[m - 1]}${String(y).slice(-2)}`;
+    };
+
+    const uniqueMonths = (arr) => {
+      const months = new Set();
+      arr.forEach((item) => {
+        if (!item.DATA || item.DATA.length < 10) return;
+        const [, m, y] = item.DATA.split('/');
+        if (m && y) months.add(`${m}/${y}`);
+      });
+      return [...months]
+        .sort((a, b) => {
+          const [ma, ya] = a.split('/').map(Number);
+          const [mb, yb] = b.split('/').map(Number);
+          return (ya - yb) || (ma - mb);
+        })
+        .map((ref) => ({ value: ref, label: formatMesRef(ref) }));
+    };
+
+    const trimestreLabels = {
+      1: 'JAN-MAR',
+      2: 'ABR-JUN',
+      3: 'JUL-SET',
+      4: 'OUT-DEZ'
+    };
+
+    const formatTrimesterLabel = (ref) => {
+      const match = ref.match(/T(\d+)-(\d+)/);
+      if (!match) return ref;
+      const [, t, y] = match;
+      return `${trimestreLabels[t]} ${y}`;
+    };
+
+    const getTrimester = (dataStr) => {
+      if (!dataStr || dataStr.length < 10) return null;
+      const [d, m, y] = dataStr.split('/').map(Number);
+      if (!d || !m || !y) return null;
+      const t = Math.ceil(m / 3);
+      return `T${t}-${y}`;
+    };
+
+    const uniqueTrimesters = (arr) => {
+      const refs = new Set();
+      arr.forEach((item) => {
+        const ref = getTrimester(item.DATA);
+        if (ref) refs.add(ref);
+      });
+      return [...refs].sort((a, b) => {
+        const [, ta, ya] = a.match(/T(\d+)-(\d+)/);
+        const [, tb, yb] = b.match(/T(\d+)-(\d+)/);
+        return (ya - yb) || (ta - tb);
+      }).map((ref) => ({ value: ref, label: formatTrimesterLabel(ref) }));
+    };
+
+    const getYearMonth = (dataStr) => {
+      if (!dataStr || dataStr.length < 10) return null;
+      const [d, m, y] = dataStr.split('/').map(Number);
+      if (!d || !m || !y) return null;
+      return { ano: y, mes: m, ref: `${y}-${String(m).padStart(2, '0')}` };
+    };
+
+    const getTrimesterNum = (dataStr) => {
+      const t = getTrimester(dataStr);
+      if (!t) return null;
+      const [, trim, ano] = t.match(/T(\d+)-(\d+)/);
+      return { trim: Number(trim), ano: Number(ano) };
+    };
+
+    const palette = [
+      '#2563eb', '#dc2626', '#facc15', '#60a5fa',
+      '#ef4444', '#3b82f6', '#fbbf24', '#94a3b8',
+      '#1d4ed8', '#b91c1c', '#e5e7eb', '#f87171'
+    ];
+
+    // ============================================================
+    // APLICAÇÃO
+    // ============================================================
+
+    const app = {
+      allData: [],
+      filteredData: [],
+      displayData: [],
+      charts: {},
+      viewMode: 'count', // 'qtd' | 'count'
+      tableTab: 'todos',
+
+      init() {
+        this.startClock();
+        this.bindFilters();
+        this.updateModeUI();
+        this.loadData();
+      },
+
+      updateModeUI() {
+        document.getElementById('mode-qtd').classList.toggle('active', this.viewMode === 'qtd');
+        document.getElementById('mode-count').classList.toggle('active', this.viewMode === 'count');
+        document.getElementById('kpi-total-label').textContent =
+          this.viewMode === 'qtd' ? 'Total de QTD' : 'Total de Ocorrências';
+      },
+
+      startClock() {
+        const update = () => {
+          const now = new Date();
+          document.getElementById('clock-time').textContent = now.toLocaleTimeString('pt-BR');
+          document.getElementById('clock-date').textContent = now.toLocaleDateString('pt-BR', {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+          });
+        };
+        update();
+        setInterval(update, 1000);
+      },
+
+      async loadData() {
+        this.showLoading(true);
+        this.showError(false);
+
+        try {
+          const rows = [];
+          const errors = [];
+
+          await Promise.all(
+            SHEET_GIDS.map(async (gid) => {
+              try {
+                const response = await fetch(getSheetUrl(gid));
+                if (!response.ok) {
+                  if (response.status !== 404) errors.push(`gid ${gid}: HTTP ${response.status}`);
+                  return;
+                }
+
+                const buffer = await response.arrayBuffer();
+                const decoder = new TextDecoder('utf-8');
+                const csvText = decoder.decode(buffer);
+
+                if (!csvText.trim() || csvText.trim().toLowerCase().startsWith('<!doctype')) {
+                  errors.push(`gid ${gid}: vazia ou HTML`);
+                  return;
+                }
+
+                const parsed = Papa.parse(csvText, {
+                  header: true,
+                  skipEmptyLines: true,
+                  delimiter: ','
+                });
+
+                if (parsed.errors.length) console.warn(`Avisos gid ${gid}:`, parsed.errors);
+
+                const sheetRows = parsed.data
+                  .filter((row) => row.DATA || row.LOCAL || row.INDICADOR || row.QTD)
+                  .map((row) => ({
+                    DATA: (row.DATA || '').trim(),
+                    LOCAL: (row.LOCAL || '').trim() || 'NÃO INFORMADO',
+                    INDICADOR: (row.INDICADOR || '').trim() || `Aba ${gid}`,
+                    TIPO: (row.TIPO || '').trim() || 'NÃO INFORMADO',
+                    QTD: Number(row.QTD) || 0,
+                    CIA: (row.CIA || '').trim() || 'NÃO INFORMADO',
+                    FONTE: `gid ${gid}`
+                  }));
+
+                rows.push(...sheetRows);
+              } catch (err) {
+                errors.push(`gid ${gid}: ${err.message}`);
+                console.error(`Erro ao carregar gid ${gid}:`, err);
+              }
+            })
+          );
+
+          if (!rows.length) throw new Error(errors.join('; ') || 'Nenhuma aba retornou dados.');
+
+          this.allData = rows;
+          this.applyFilters();
+          this.showDashboard(true);
+
+          if (errors.length) console.warn('Abas com problema:', errors);
+        } catch (err) {
+          console.error(err);
+          this.showError(true, err.message);
+        } finally {
+          this.showLoading(false);
+        }
+      },
+
+      getValue(item) {
+        return this.viewMode === 'qtd' ? item.QTD : 1;
+      },
+
+      getDatasetLabel() {
+        return this.viewMode === 'qtd' ? 'QTD' : 'Ocorrências';
+      },
+
+      setMode(mode) {
+        this.viewMode = mode;
+        this.updateModeUI();
+        this.updateDashboard();
+      },
+
+      populateFilters() {
+        const setOptions = (id, values, defaultLabel, currentValue) => {
+          const select = document.getElementById(id);
+          select.innerHTML = `<option value="">${defaultLabel}</option>`;
+          values.forEach((item) => {
+            const option = document.createElement('option');
+            const value = typeof item === 'object' ? item.value : item;
+            const label = typeof item === 'object' ? item.label : item;
+            option.value = value;
+            option.textContent = label;
+            select.appendChild(option);
+          });
+          if (currentValue) select.value = currentValue;
+        };
+
+        const getCurrent = (id) => document.getElementById(id)?.value || '';
+
+        setOptions('filter-mes', uniqueMonths(this.allData), 'Todos', getCurrent('filter-mes'));
+        setOptions('filter-trimestre', uniqueTrimesters(this.allData), 'Todos', getCurrent('filter-trimestre'));
+        setOptions('filter-local', uniqueSorted(this.allData, 'LOCAL'), 'Todos', getCurrent('filter-local'));
+        setOptions('filter-indicador', uniqueSorted(this.allData, 'INDICADOR'), 'Todos', getCurrent('filter-indicador'));
+        setOptions('filter-tipo', uniqueSorted(this.allData, 'TIPO'), 'Todos', getCurrent('filter-tipo'));
+        setOptions('filter-cia', uniqueSorted(this.allData, 'CIA'), 'Todas', getCurrent('filter-cia'));
+
+        const dates = this.allData.map((r) => parseDateBR(r.DATA)).filter(Boolean);
+        if (dates.length) {
+          const min = new Date(Math.min(...dates));
+          const max = new Date(Math.max(...dates));
+          const inicioInput = document.getElementById('filter-data-inicio');
+          const fimInput = document.getElementById('filter-data-fim');
+          const minISO = brToISO(dateToBR(min));
+          const maxISO = brToISO(dateToBR(max));
+          inicioInput.min = minISO;
+          inicioInput.max = maxISO;
+          fimInput.min = minISO;
+          fimInput.max = maxISO;
+        }
+      },
+
+      bindFilters() {
+        ['filter-local', 'filter-indicador', 'filter-tipo', 'filter-cia']
+          .forEach((id) => {
+            document.getElementById(id).addEventListener('change', () => this.applyFilters());
+          });
+
+        const mesEl = document.getElementById('filter-mes');
+        const trimEl = document.getElementById('filter-trimestre');
+        const inicioEl = document.getElementById('filter-data-inicio');
+        const fimEl = document.getElementById('filter-data-fim');
+
+        mesEl.addEventListener('change', () => {
+          const val = mesEl.value;
+          if (val) {
+            const [mes, ano] = val.split('/').map(Number);
+            const start = new Date(ano, mes - 1, 1);
+            const end = new Date(ano, mes, 0);
+            inicioEl.value = brToISO(dateToBR(start));
+            fimEl.value = brToISO(dateToBR(end));
+            trimEl.value = '';
+          } else {
+            inicioEl.value = '';
+            fimEl.value = '';
+          }
+          this.applyFilters();
+        });
+
+        trimEl.addEventListener('change', () => {
+          const val = trimEl.value;
+          if (val) {
+            const [trimStr, ano] = val.split('-');
+            const t = parseInt(trimStr.replace('T', ''), 10);
+            const start = new Date(ano, (t - 1) * 3, 1);
+            const end = new Date(ano, t * 3, 0);
+            inicioEl.value = brToISO(dateToBR(start));
+            fimEl.value = brToISO(dateToBR(end));
+            mesEl.value = '';
+          } else {
+            inicioEl.value = '';
+            fimEl.value = '';
+          }
+          this.applyFilters();
+        });
+
+        inicioEl.addEventListener('change', () => {
+          mesEl.value = '';
+          trimEl.value = '';
+          this.applyFilters();
+        });
+
+        fimEl.addEventListener('change', () => {
+          mesEl.value = '';
+          trimEl.value = '';
+          this.applyFilters();
+        });
+      },
+
+      applyFilters() {
+        const mesFilter = document.getElementById('filter-mes').value;
+        const trimFilter = document.getElementById('filter-trimestre').value;
+        const dataInicioISO = document.getElementById('filter-data-inicio').value;
+        const dataFimISO = document.getElementById('filter-data-fim').value;
+        const dataInicioBR = dataInicioISO ? isoToBR(dataInicioISO) : '';
+        const dataFimBR = dataFimISO ? isoToBR(dataFimISO) : '';
+        const dataInicioDt = dataInicioBR ? parseDateBR(dataInicioBR) : null;
+        const dataFimDt = dataFimBR ? parseDateBR(dataFimBR) : null;
+        const localFilter = document.getElementById('filter-local').value;
+        const indicadorFilter = document.getElementById('filter-indicador').value;
+        const tipoFilter = document.getElementById('filter-tipo').value;
+        const ciaFilter = document.getElementById('filter-cia').value;
+
+        const matchesCategoria = (item) => {
+          return (
+            (!localFilter || item.LOCAL === localFilter) &&
+            (!indicadorFilter || item.INDICADOR === indicadorFilter) &&
+            (!tipoFilter || item.TIPO === tipoFilter) &&
+            (!ciaFilter || item.CIA === ciaFilter)
+          );
+        };
+
+        const matchesTemporal = (item) => {
+          const dt = parseDateBR(item.DATA);
+          if (!dt) return false;
+          const mesMatch = !mesFilter || item.DATA.endsWith(mesFilter);
+          const trimMatch = !trimFilter || (getTrimester(item.DATA) === trimFilter);
+          const dataMatch =
+            (!dataInicioDt || dt >= dataInicioDt) &&
+            (!dataFimDt || dt <= dataFimDt);
+          return mesMatch && trimMatch && dataMatch;
+        };
+
+        this.comparisonBase = this.allData.filter(matchesCategoria);
+        this.filteredData = this.comparisonBase.filter(matchesTemporal);
+        this.displayData = [...this.filteredData];
+
+        this.populateFilters();
+        this.updateDashboard();
+        this.renderActiveFilters();
+      },
+
+      clearFilters() {
+        ['filter-mes', 'filter-trimestre', 'filter-local', 'filter-indicador', 'filter-tipo', 'filter-cia']
+          .forEach((id) => { document.getElementById(id).value = ''; });
+        document.getElementById('filter-data-inicio').value = '';
+        document.getElementById('filter-data-fim').value = '';
+        this.applyFilters();
+      },
+
+      filterFrom(field, value) {
+        const map = {
+          DATA: 'period',
+          LOCAL: 'filter-local',
+          INDICADOR: 'filter-indicador',
+          TIPO: 'filter-tipo',
+          CIA: 'filter-cia'
+        };
+
+        if (field === 'DATA') {
+          const dt = parseDateBR(value);
+          if (dt) {
+            document.getElementById('filter-data-inicio').value = brToISO(value);
+            document.getElementById('filter-data-fim').value = brToISO(value);
+            document.getElementById('filter-mes').value = '';
+            document.getElementById('filter-trimestre').value = '';
+          }
+        } else {
+          const id = map[field];
+          if (id && value) {
+            const select = document.getElementById(id);
+            if (select) select.value = value;
+          }
+        }
+        this.applyFilters();
+      },
+
+      renderActiveFilters() {
+        const container = document.getElementById('active-filters');
+        container.innerHTML = '<span class="text-xs font-medium text-beptur-200 self-center">Filtros ativos:</span>';
+
+        const defs = [
+          { id: 'filter-mes', label: 'Mês', type: 'select' },
+          { id: 'filter-trimestre', label: 'Trimestre', type: 'select' },
+          { id: 'filter-data-inicio', label: 'De', type: 'date' },
+          { id: 'filter-data-fim', label: 'Até', type: 'date' },
+          { id: 'filter-local', label: 'Local', type: 'select' },
+          { id: 'filter-indicador', label: 'Indicador', type: 'select' },
+          { id: 'filter-tipo', label: 'Tipo', type: 'select' },
+          { id: 'filter-cia', label: 'CIA', type: 'select' }
+        ];
+
+        let hasAny = false;
+
+        defs.forEach((def) => {
+          const el = document.getElementById(def.id);
+          if (!el || !el.value) return;
+          let val = def.type === 'date' ? isoToBR(el.value) : el.value;
+          if (def.id === 'filter-trimestre') val = formatTrimesterLabel(el.value);
+          if (def.id === 'filter-mes') val = formatMesRef(el.value);
+          hasAny = true;
+          const chip = document.createElement('button');
+          chip.className = 'filter-chip';
+          chip.innerHTML = `${def.label}: <strong>${val}</strong> ×`;
+          chip.addEventListener('click', () => {
+            el.value = '';
+            if (def.type === 'date' && def.id === 'filter-data-inicio') {
+              const mes = document.getElementById('filter-mes');
+              const tri = document.getElementById('filter-trimestre');
+              if (mes.value || tri.value) {
+                document.getElementById('filter-data-fim').value = '';
+              }
+            }
+            this.applyFilters();
+          });
+          container.appendChild(chip);
+        });
+
+        container.classList.toggle('hidden', !hasAny);
+      },
+
+      makeClickHandler(field) {
+        return (evt, elements, chart) => {
+          if (!elements.length) return;
+          const index = elements[0].index;
+          const label = chart.data.labels[index];
+          if (label) this.filterFrom(field, label);
+        };
+      },
+
+      makeTypeClickHandler() {
+        return (evt, elements, chart) => {
+          if (!elements.length) return;
+          const dsIndex = elements[0].datasetIndex;
+          const tipo = chart.data.datasets[dsIndex]?.label;
+          if (tipo === 'Positivo' || tipo === 'Negativo') this.filterFrom('TIPO', tipo);
+        };
+      },
+
+      makeMonthClickHandler() {
+        return (evt, elements, chart) => {
+          if (!elements.length) return;
+          const index = elements[0].index;
+          const mesNome = chart.data.labels[index];
+          const dataset = chart.data.datasets[elements[0].datasetIndex];
+          const ano = dataset?.label;
+          if (!mesNome || !ano) return;
+          const mes = mesesAbrev.indexOf(mesNome) + 1;
+          if (!mes) return;
+          const select = document.getElementById('filter-mes');
+          if (select) {
+            select.value = `${String(mes).padStart(2, '0')}/${ano}`;
+            this.applyFilters();
+          }
+        };
+      },
+
+      makeTrimClickHandler() {
+        const labelToTrim = Object.fromEntries(
+          Object.entries(trimestreLabels).map(([k, v]) => [v, k])
+        );
+        return (evt, elements, chart) => {
+          if (!elements.length) return;
+          const index = elements[0].index;
+          const trimLabel = chart.data.labels[index];
+          const dataset = chart.data.datasets[elements[0].datasetIndex];
+          const ano = dataset?.label;
+          if (!trimLabel || !ano) return;
+          const t = labelToTrim[trimLabel];
+          if (!t) return;
+          const select = document.getElementById('filter-trimestre');
+          if (select) {
+            select.value = `T${t}-${ano}`;
+            this.applyFilters();
+          }
+        };
+      },
+
+      updateDashboard() {
+        this.updateTitles();
+        this.updateKPIs();
+        this.renderCharts();
+        this.renderTable();
+      },
+
+      updateTitles() {
+        const label = this.getDatasetLabel();
+        document.getElementById('title-evolucao').textContent = `Evolução ao longo do tempo`;
+        document.getElementById('title-locais').textContent = `Top 5 Locais por ${label}`;
+      },
+
+      updateKPIs() {
+        const total = this.displayData.reduce((acc, item) => acc + this.getValue(item), 0);
+
+        const byLocal = {};
+        const byCia = {};
+        const datasSet = new Set();
+
+        this.displayData.forEach((item) => {
+          datasSet.add(item.DATA);
+          byLocal[item.LOCAL] = (byLocal[item.LOCAL] || 0) + this.getValue(item);
+          byCia[item.CIA] = (byCia[item.CIA] || 0) + this.getValue(item);
+        });
+
+        const locais = Object.entries(byLocal).sort((a, b) => b[1] - a[1]);
+        const cias = Object.entries(byCia).sort((a, b) => b[1] - a[1]);
+
+        const [topLocal, topLocalQtd] = locais[0] || ['-', 0];
+        const [topCia, topCiaQtd] = cias[0] || ['-', 0];
+        const media = datasSet.size ? total / datasSet.size : 0;
+
+        document.getElementById('kpi-total').textContent = formatNumber(total);
+        document.getElementById('kpi-local').textContent = topLocal;
+        document.getElementById('kpi-local-qtd').textContent = `${formatNumber(topLocalQtd)} ${this.viewMode === 'qtd' ? 'QTD' : 'ocorrências'}`;
+        document.getElementById('kpi-cia').textContent = topCia;
+        document.getElementById('kpi-cia-qtd').textContent = `${formatNumber(topCiaQtd)} ${this.viewMode === 'qtd' ? 'QTD' : 'ocorrências'}`;
+        document.getElementById('kpi-media').textContent = formatNumber(Math.round(media));
+
+        // Variacao vs mes anterior e trimestre anterior
+        this.updateVariacoes();
+      },
+
+      updateVariacoes() {
+        const base = this.comparisonBase || this.allData;
+
+        const refsMes = [...new Set(
+          base.map((i) => {
+            const ym = getYearMonth(i.DATA);
+            return ym ? `${ym.ano}-${String(ym.mes).padStart(2, '0')}` : null;
+          }).filter(Boolean)
+        )].sort();
+
+        const refsTrim = [...new Set(
+          base.map((i) => getTrimester(i.DATA)).filter(Boolean)
+        )].sort((a, b) => {
+          const [, ta, ya] = a.match(/T(\d+)-(\d+)/);
+          const [, tb, yb] = b.match(/T(\d+)-(\d+)/);
+          return (ya - yb) || (ta - tb);
+        });
+
+        const somaMes = (ano, mes) => base
+          .filter((i) => {
+            const ym = getYearMonth(i.DATA);
+            return ym && ym.ano === ano && ym.mes === mes;
+          })
+          .reduce((acc, i) => acc + this.getValue(i), 0);
+
+        const somaTrim = (ano, trim) => base
+          .filter((i) => {
+            const t = getTrimesterNum(i.DATA);
+            return t && t.ano === ano && t.trim === trim;
+          })
+          .reduce((acc, i) => acc + this.getValue(i), 0);
+
+        const calcVar = (atual, ant) => {
+          if (ant === 0) return atual === 0 ? 0 : 100;
+          return ((atual - ant) / ant) * 100;
+        };
+
+        const setVar = (id, value, label, hasData) => {
+          const el = document.getElementById(id);
+          const lbl = document.getElementById(id + '-label');
+          if (!hasData) {
+            el.textContent = '-';
+            el.className = 'text-3xl font-bold mt-1 text-slate-400';
+            lbl.textContent = 'Sem dados';
+            lbl.className = 'text-sm text-slate-400';
+            return;
+          }
+          el.textContent = `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
+          el.className = `text-3xl font-bold mt-1 ${value >= 0 ? 'text-green-400' : 'text-red-400'}`;
+          lbl.textContent = label;
+          lbl.className = 'text-sm ' + (value >= 0 ? 'text-green-300' : 'text-red-300');
+        };
+
+        if (refsMes.length >= 2) {
+          const mesAtualRef = refsMes[refsMes.length - 1];
+          const mesAntRef = refsMes[refsMes.length - 2];
+          const [anoM, mesM] = mesAtualRef.split('-').map(Number);
+          const [anoA, mesA] = mesAntRef.split('-').map(Number);
+          const valMesAtual = somaMes(anoM, mesM);
+          const valMesAnt = somaMes(anoA, mesA);
+          const varMes = calcVar(valMesAtual, valMesAnt);
+          const mesNome = `${mesesAbrev[mesM - 1]}${String(anoM).slice(-2)}`;
+          const mesAntNome = `${mesesAbrev[mesA - 1]}${String(anoA).slice(-2)}`;
+          setVar('kpi-var-mes', varMes, `${mesNome} vs ${mesAntNome}`, true);
+        } else {
+          setVar('kpi-var-mes', 0, '', false);
+        }
+
+        if (refsTrim.length >= 2) {
+          const trimAtualRef = refsTrim[refsTrim.length - 1];
+          const trimAntRef = refsTrim[refsTrim.length - 2];
+          const [, t1, y1] = trimAtualRef.match(/T(\d+)-(\d+)/);
+          const [, t2, y2] = trimAntRef.match(/T(\d+)-(\d+)/);
+          const valTrimAtual = somaTrim(Number(y1), Number(t1));
+          const valTrimAnt = somaTrim(Number(y2), Number(t2));
+          const varTrim = calcVar(valTrimAtual, valTrimAnt);
+          const trimNome = `${trimestreLabels[t1]} ${String(y1).slice(-2)}`;
+          const trimAntNome = `${trimestreLabels[t2]} ${String(y2).slice(-2)}`;
+          setVar('kpi-var-trim', varTrim, `${trimNome} vs ${trimAntNome}`, true);
+        } else {
+          setVar('kpi-var-trim', 0, '', false);
+        }
+      },
+
+      renderCharts() {
+        this.renderEvolucao();
+        this.renderMensal();
+        this.renderTrimestral();
+        this.renderLocais();
+        this.renderCia();
+        this.renderIndicador();
+        this.renderTipo();
+        this.renderIndicadorSec();
+      },
+
+      commonOptions() {
+        return {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: '#e2e8f0', font: { family: 'Inter', size: 12 } }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(15, 26, 61, 0.92)',
+              titleColor: '#fff',
+              bodyColor: '#e2e8f0',
+              borderColor: 'rgba(255,255,255,0.15)',
+              borderWidth: 1,
+              padding: 10,
+              cornerRadius: 8
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: '#94a3b8', font: { family: 'Inter' } },
+              grid: { color: 'rgba(255,255,255,0.06)' }
+            },
+            y: {
+              ticks: { color: '#94a3b8', font: { family: 'Inter' } },
+              grid: { color: 'rgba(255,255,255,0.06)' }
+            }
+          }
+        };
+      },
+
+      renderEvolucao() {
+        const allDates = getDateRange(this.displayData);
+        const grouped = Object.fromEntries(allDates.map((d) => [d, 0]));
+
+        this.displayData
+          .filter((item) => item.DATA)
+          .forEach((item) => {
+            grouped[item.DATA] = (grouped[item.DATA] || 0) + this.getValue(item);
+          });
+
+        const labels = allDates;
+        const values = labels.map((d) => grouped[d] || 0);
+
+        const ctx = document.getElementById('chart-evolucao').getContext('2d');
+        if (this.charts.evolucao) this.charts.evolucao.destroy();
+
+        this.charts.evolucao = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: this.getDatasetLabel(),
+              data: values,
+              borderColor: '#3b82f6',
+              backgroundColor: 'rgba(59, 130, 246, 0.2)',
+              borderWidth: 3,
+              pointBackgroundColor: '#2563eb',
+              pointBorderColor: '#fff',
+              pointRadius: values.length > 60 ? 0 : 3,
+              pointHoverRadius: 6,
+              tension: 0.4,
+              fill: true
+            }]
+          },
+          options: {
+            ...this.commonOptions(),
+            onClick: this.makeClickHandler('DATA'),
+            scales: {
+              ...this.commonOptions().scales,
+              x: {
+                ...this.commonOptions().scales.x,
+                ticks: {
+                  ...this.commonOptions().scales.x.ticks,
+                  maxTicksLimit: 12
+                }
+              }
+            }
+          }
+        });
+      },
+
+      renderMensal() {
+        const base = this.comparisonBase || this.allData;
+
+        const grouped = {};
+        base.forEach((item) => {
+          const ym = getYearMonth(item.DATA);
+          if (!ym) return;
+          const key = `${ym.ano}-${String(ym.mes).padStart(2, '0')}`;
+          if (!grouped[ym.ano]) grouped[ym.ano] = {};
+          grouped[ym.ano][ym.mes] = (grouped[ym.ano][ym.mes] || 0) + this.getValue(item);
+        });
+
+        const anos = Object.keys(grouped).sort();
+        const meses = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+        const labels = meses.map((m) => mesesAbrev[m - 1]);
+
+        const datasets = anos.map((ano, idx) => ({
+          label: String(ano),
+          data: meses.map((m) => grouped[ano][m] || 0),
+          backgroundColor: idx === anos.length - 1 ? '#2563eb' : '#94a3b8',
+          borderColor: idx === anos.length - 1 ? '#60a5fa' : '#cbd5e1',
+          borderWidth: 1,
+          borderRadius: 5,
+          borderSkipped: false
+        }));
+
+        const ctx = document.getElementById('chart-mensal').getContext('2d');
+        if (this.charts.mensal) this.charts.mensal.destroy();
+
+        this.charts.mensal = new Chart(ctx, {
+          type: 'bar',
+          data: { labels, datasets },
+          options: {
+            ...this.commonOptions(),
+            onClick: this.makeMonthClickHandler(),
+            scales: {
+              ...this.commonOptions().scales,
+              x: {
+                ...this.commonOptions().scales.x,
+                ticks: {
+                  ...this.commonOptions().scales.x.ticks,
+                  autoSkip: false
+                }
+              }
+            }
+          }
+        });
+      },
+
+      renderTrimestral() {
+        const base = this.comparisonBase || this.allData;
+
+        const grouped = {};
+        base.forEach((item) => {
+          const t = getTrimesterNum(item.DATA);
+          if (!t) return;
+          if (!grouped[t.ano]) grouped[t.ano] = {};
+          grouped[t.ano][t.trim] = (grouped[t.ano][t.trim] || 0) + this.getValue(item);
+        });
+
+        const anos = Object.keys(grouped).sort();
+        const trimestres = [1, 2, 3, 4];
+        const labels = trimestres.map((t) => trimestreLabels[t]);
+
+        const datasets = anos.map((ano, idx) => ({
+          label: String(ano),
+          data: trimestres.map((t) => grouped[ano][t] || 0),
+          backgroundColor: idx === anos.length - 1 ? '#dc2626' : '#94a3b8',
+          borderColor: idx === anos.length - 1 ? '#f87171' : '#cbd5e1',
+          borderWidth: 1,
+          borderRadius: 5,
+          borderSkipped: false
+        }));
+
+        const ctx = document.getElementById('chart-trimestral').getContext('2d');
+        if (this.charts.trimestral) this.charts.trimestral.destroy();
+
+        this.charts.trimestral = new Chart(ctx, {
+          type: 'bar',
+          data: { labels, datasets },
+          options: {
+            ...this.commonOptions(),
+            onClick: this.makeTrimClickHandler(),
+            scales: {
+              ...this.commonOptions().scales,
+              x: {
+                ...this.commonOptions().scales.x,
+                ticks: { ...this.commonOptions().scales.x.ticks, autoSkip: false }
+              }
+            }
+          }
+        });
+      },
+
+      renderLocais() {
+        const byLocal = {};
+        this.displayData.forEach((item) => {
+          byLocal[item.LOCAL] = (byLocal[item.LOCAL] || 0) + this.getValue(item);
+        });
+
+        const locais = Object.entries(byLocal).sort((a, b) => b[1] - a[1]).slice(0, 5);
+        const labels = locais.map(([k]) => k);
+        const values = locais.map(([, v]) => v);
+
+        const ctx = document.getElementById('chart-locais').getContext('2d');
+        if (this.charts.locais) this.charts.locais.destroy();
+
+        this.charts.locais = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: this.getDatasetLabel(),
+              data: values,
+              backgroundColor: palette.slice(0, labels.length),
+              borderRadius: 6,
+              borderSkipped: false
+            }]
+          },
+          options: {
+            ...this.commonOptions(),
+            indexAxis: 'y',
+            onClick: this.makeClickHandler('LOCAL'),
+            scales: {
+              x: {
+                ticks: { color: '#94a3b8' },
+                grid: { color: 'rgba(255,255,255,0.06)' }
+              },
+              y: {
+                ticks: {
+                  color: '#e2e8f0',
+                  autoSkip: false,
+                  font: { size: 12 }
+                },
+                grid: { display: false }
+              }
+            }
+          }
+        });
+      },
+
+      renderCia() {
+        const byCia = {};
+        this.displayData.forEach((item) => {
+          byCia[item.CIA] = (byCia[item.CIA] || 0) + this.getValue(item);
+        });
+
+        const cias = Object.entries(byCia).sort((a, b) => b[1] - a[1]);
+        const labels = cias.map(([k]) => k);
+        const values = cias.map(([, v]) => v);
+
+        const ctx = document.getElementById('chart-cia').getContext('2d');
+        if (this.charts.cia) this.charts.cia.destroy();
+
+        this.charts.cia = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels,
+            datasets: [{
+              data: values,
+              backgroundColor: palette.slice(0, labels.length),
+              borderWidth: 2,
+              borderColor: 'rgba(15, 26, 61, 0.8)',
+              hoverOffset: 8
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            onClick: this.makeClickHandler('CIA'),
+            plugins: {
+              legend: {
+                position: 'right',
+                labels: { color: '#e2e8f0', font: { family: 'Inter', size: 11 } }
+              },
+              tooltip: {
+                backgroundColor: 'rgba(15, 26, 61, 0.92)',
+                bodyColor: '#e2e8f0',
+                borderColor: 'rgba(255,255,255,0.15)',
+                borderWidth: 1
+              }
+            }
+          }
+        });
+      },
+
+      renderIndicador() {
+        const byInd = {};
+        this.displayData.forEach((item) => {
+          byInd[item.INDICADOR] = (byInd[item.INDICADOR] || 0) + this.getValue(item);
+        });
+
+        const indicadores = Object.entries(byInd).sort((a, b) => b[1] - a[1]);
+        const labels = indicadores.map(([k]) => k);
+        const values = indicadores.map(([, v]) => v);
+
+        const ctx = document.getElementById('chart-indicador').getContext('2d');
+        if (this.charts.indicador) this.charts.indicador.destroy();
+
+        this.charts.indicador = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: this.getDatasetLabel(),
+              data: values,
+              backgroundColor: labels.map((_, i) => palette[i % palette.length]),
+              borderRadius: 6,
+              borderSkipped: false
+            }]
+          },
+          options: {
+            ...this.commonOptions(),
+            onClick: this.makeClickHandler('INDICADOR'),
+            scales: {
+              ...this.commonOptions().scales,
+              x: {
+                ...this.commonOptions().scales.x,
+                ticks: {
+                  ...this.commonOptions().scales.x.ticks,
+                  autoSkip: false,
+                  maxRotation: 45,
+                  minRotation: 45
+                }
+              }
+            }
+          }
+        });
+      },
+
+      renderTipo() {
+        const allDates = getDateRange(this.displayData);
+        const base = Object.fromEntries(allDates.map((d) => [d, { Positivo: 0, Negativo: 0 }]));
+
+        this.displayData.forEach((item) => {
+          if (!item.DATA || !base[item.DATA]) return;
+          const add = this.getValue(item);
+          if (item.TIPO === 'Positivo') base[item.DATA].Positivo += add;
+          else if (item.TIPO === 'Negativo') base[item.DATA].Negativo += add;
+        });
+
+        const labels = allDates;
+        const positivo = labels.map((d) => base[d].Positivo);
+        const negativo = labels.map((d) => base[d].Negativo);
+
+        const ctx = document.getElementById('chart-tipo').getContext('2d');
+        if (this.charts.tipo) this.charts.tipo.destroy();
+
+        this.charts.tipo = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [
+              {
+                label: 'Positivo',
+                data: positivo,
+                backgroundColor: '#2563eb',
+                borderRadius: 4,
+                borderSkipped: false
+              },
+              {
+                label: 'Negativo',
+                data: negativo,
+                backgroundColor: '#dc2626',
+                borderRadius: 4,
+                borderSkipped: false
+              }
+            ]
+          },
+          options: {
+            ...this.commonOptions(),
+            onClick: this.makeTypeClickHandler(),
+            scales: {
+              x: {
+                stacked: false,
+                ticks: { color: '#94a3b8', maxTicksLimit: 12 },
+                grid: { color: 'rgba(255,255,255,0.06)' }
+              },
+              y: {
+                stacked: false,
+                ticks: { color: '#94a3b8' },
+                grid: { color: 'rgba(255,255,255,0.06)' }
+              }
+            },
+            barPercentage: 0.9,
+            categoryPercentage: 0.8
+          }
+        });
+      },
+
+      renderIndicadorSec() {
+        const byInd = {};
+        this.displayData
+          .filter((item) => item.INDICADOR !== 'Drogas Apreendidas')
+          .forEach((item) => {
+            byInd[item.INDICADOR] = (byInd[item.INDICADOR] || 0) + this.getValue(item);
+          });
+
+        const indicadores = Object.entries(byInd).sort((a, b) => b[1] - a[1]);
+        const labels = indicadores.map(([k]) => k);
+        const values = indicadores.map(([, v]) => v);
+
+        const ctx = document.getElementById('chart-indicador-sec').getContext('2d');
+        if (this.charts.indicadorSec) this.charts.indicadorSec.destroy();
+
+        this.charts.indicadorSec = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: this.getDatasetLabel(),
+              data: values,
+              backgroundColor: '#facc15',
+              borderRadius: 6,
+              borderSkipped: false
+            }]
+          },
+          options: {
+            ...this.commonOptions(),
+            onClick: this.makeClickHandler('INDICADOR'),
+            scales: {
+              ...this.commonOptions().scales,
+              x: {
+                ...this.commonOptions().scales.x,
+                ticks: {
+                  ...this.commonOptions().scales.x.ticks,
+                  autoSkip: false,
+                  maxRotation: 45,
+                  minRotation: 45
+                }
+              }
+            }
+          }
+        });
+      },
+
+      switchTableTab(tab) {
+        this.tableTab = tab;
+        document.querySelectorAll('.tab-btn').forEach((btn) => {
+          btn.classList.toggle('active', btn.dataset.tab === tab);
+        });
+        document.querySelectorAll('.tab-content').forEach((content) => {
+          content.classList.toggle('hidden', !content.id.endsWith(tab));
+        });
+        this.renderTable();
+      },
+
+      renderTable() {
+        if (this.tableTab === 'todos') this.renderTableTodos();
+        else if (this.tableTab === 'indicador') this.renderTableIndicador();
+        else if (this.tableTab === 'local') this.renderTableLocal();
+        else if (this.tableTab === 'cia') this.renderTableCia();
+      },
+
+      renderTableTodos() {
+        const tbody = document.getElementById('table-body');
+        tbody.innerHTML = '';
+
+        const rows = [...this.displayData].sort(sortByDateAsc).slice(0, 50);
+        document.getElementById('table-count').textContent =
+          `${this.displayData.length} registros${this.displayData.length > 50 ? ' (mostrando 50)' : ''}`;
+
+        rows.forEach((item) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${item.DATA}</td>
+            <td>${item.LOCAL}</td>
+            <td>${item.INDICADOR}</td>
+            <td><span class="badge ${item.TIPO === 'Positivo' ? 'badge-positivo' : 'badge-negativo'}">${item.TIPO}</span></td>
+            <td class="tabular-nums">${item.QTD}</td>
+            <td>${item.CIA}</td>
+            <td><span class="text-xs text-beptur-200">${item.FONTE}</span></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      },
+
+      aggregateBy(key) {
+        const groups = {};
+        this.displayData.forEach((item) => {
+          const k = item[key];
+          if (!groups[k]) groups[k] = { items: [], total: 0, count: 0 };
+          const val = this.getValue(item);
+          groups[k].items.push(item);
+          groups[k].total += val;
+          groups[k].count += 1;
+        });
+        return groups;
+      },
+
+      topKey(items, key) {
+        const counts = {};
+        items.forEach((i) => { counts[i[key]] = (counts[i[key]] || 0) + this.getValue(i); });
+        return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || '-';
+      },
+
+      renderTableIndicador() {
+        const tbody = document.getElementById('table-body-indicador');
+        tbody.innerHTML = '';
+
+        const groups = this.aggregateBy('INDICADOR');
+        const totalOcorrencias = this.displayData.length;
+
+        const enriched = Object.entries(groups).map(([indicador, data]) => {
+          const totalQtd = data.items.reduce((a, i) => a + i.QTD, 0);
+          return { indicador, data, totalQtd };
+        });
+
+        const sorted = enriched.sort((a, b) => b.data.count - a.data.count);
+
+        document.getElementById('table-count').textContent = `${sorted.length} indicadores`;
+
+        sorted.forEach(({ indicador, data, totalQtd }) => {
+          const pct = totalOcorrencias ? ((data.count / totalOcorrencias) * 100).toFixed(1) : 0;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${indicador}</td>
+            <td class="tabular-nums">${data.count}</td>
+            <td class="tabular-nums">${formatNumber(totalQtd)}</td>
+            <td class="tabular-nums">${pct}%</td>
+            <td>${this.topKey(data.items, 'LOCAL')}</td>
+            <td>${this.topKey(data.items, 'CIA')}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      },
+
+      renderTableLocal() {
+        const tbody = document.getElementById('table-body-local');
+        tbody.innerHTML = '';
+
+        const groups = this.aggregateBy('LOCAL');
+        const enriched = Object.entries(groups).map(([local, data]) => {
+          const totalQtd = data.items.reduce((a, i) => a + i.QTD, 0);
+          return { local, data, totalQtd };
+        });
+        const sorted = enriched.sort((a, b) => b.data.count - a.data.count);
+
+        document.getElementById('table-count').textContent = `${sorted.length} locais`;
+
+        sorted.forEach(({ local, data, totalQtd }) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${local}</td>
+            <td class="tabular-nums">${data.count}</td>
+            <td class="tabular-nums">${formatNumber(totalQtd)}</td>
+            <td>${this.topKey(data.items, 'INDICADOR')}</td>
+            <td>${this.topKey(data.items, 'CIA')}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      },
+
+      renderTableCia() {
+        const tbody = document.getElementById('table-body-cia');
+        tbody.innerHTML = '';
+
+        const groups = this.aggregateBy('CIA');
+        const enriched = Object.entries(groups).map(([cia, data]) => {
+          const totalQtd = data.items.reduce((a, i) => a + i.QTD, 0);
+          return { cia, data, totalQtd };
+        });
+        const sorted = enriched.sort((a, b) => b.data.count - a.data.count);
+
+        document.getElementById('table-count').textContent = `${sorted.length} unidades`;
+
+        sorted.forEach(({ cia, data, totalQtd }) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${cia}</td>
+            <td class="tabular-nums">${data.count}</td>
+            <td class="tabular-nums">${formatNumber(totalQtd)}</td>
+            <td>${this.topKey(data.items, 'INDICADOR')}</td>
+            <td>${this.topKey(data.items, 'LOCAL')}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      },
+
+      openChartModal(chartId) {
+        const original = this.charts[chartId];
+        if (!original) return;
+
+        const modal = document.getElementById('chart-modal');
+        const modalCanvas = document.getElementById('modal-chart');
+        const modalTitle = document.getElementById('modal-title');
+
+        if (this.charts.modal) this.charts.modal.destroy();
+
+        modalTitle.textContent = original.options?.plugins?.title?.text ||
+          (original.canvas?.closest('.chart-card')?.querySelector('h3')?.textContent || 'Gráfico');
+
+        const ctx = modalCanvas.getContext('2d');
+        this.charts.modal = new Chart(ctx, original.config);
+
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) this.closeChartModal();
+        }, { once: true });
+      },
+
+      closeChartModal() {
+        const modal = document.getElementById('chart-modal');
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+        if (this.charts.modal) {
+          this.charts.modal.destroy();
+          this.charts.modal = null;
+        }
+      },
+
+      showLoading(show) {
+        document.getElementById('loading-section').classList.toggle('hidden', !show);
+      },
+
+      showError(show, message = '') {
+        const section = document.getElementById('error-section');
+        section.classList.toggle('hidden', !show);
+        if (message) document.getElementById('error-message').textContent = message;
+      },
+
+      showDashboard(show) {
+        document.getElementById('dashboard').classList.toggle('hidden', !show);
+      }
+    };
+
+    // Inicializa a aplicação quando o DOM estiver pronto
+    document.addEventListener('DOMContentLoaded', () => app.init());
+  </script>
+
+  <!-- Modal de gráfico maximizado -->
+  <div id="chart-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div class="relative glass rounded-2xl p-6 w-full max-w-5xl max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between mb-4">
+        <h3 id="modal-title" class="text-lg font-semibold text-white"></h3>
+        <button onclick="app.closeChartModal()" class="text-white hover:text-red-400 text-2xl leading-none">&times;</button>
+      </div>
+      <div class="flex-1 min-h-[500px]">
+        <canvas id="modal-chart"></canvas>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
