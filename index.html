@@ -571,7 +571,7 @@
   </main>
 
   <footer class="max-w-7xl mx-auto px-6 py-6 text-center text-xs text-beptur-200">
-    BEPTur - Dados operacionais · Dashboard atualizado em tempo real
+    BEPTur - Dados de Ocorrências
   </footer>
 
   <script>
@@ -785,7 +785,13 @@
                   return;
                 }
 
-                const parsed = Papa.parse(csvText, {
+                // Algumas abas não têm linha de cabeçalho; injetar se faltar.
+                const firstLine = csvText.trim().split('\n')[0].toUpperCase();
+                const csvFinal = firstLine.includes('DATA')
+                  ? csvText
+                  : `DATA,LOCAL,INDICADOR,TIPO,QTD,CIA\n${csvText}`;
+
+                const parsed = Papa.parse(csvFinal, {
                   header: true,
                   skipEmptyLines: true,
                   delimiter: ','
@@ -1742,7 +1748,7 @@
         const totalOcorrencias = this.displayData.length;
 
         const enriched = Object.entries(groups).map(([indicador, data]) => {
-          const totalQtd = data.items.reduce((a, i) => a + i.QTD, 0);
+          const totalQtd = data.items.reduce((a, i) => a + i.QTD, 0);BEPTur - Dados operacionais · Dashboard atualizado em tempo real
           return { indicador, data, totalQtd };
         });
 
