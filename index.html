@@ -502,12 +502,16 @@
                   <th>Tipo</th>
                   <th>QTD</th>
                   <th>CIA</th>
-                  <th>Aba</th>
                 </tr>
               </thead>
               <tbody id="table-body">
               </tbody>
             </table>
+          </div>
+          <div class="flex justify-center mt-3">
+            <button id="load-more-btn" class="px-4 py-2 text-xs font-medium rounded-lg bg-beptur-600 hover:bg-beptur-500 text-white transition-colors hidden" onclick="app.loadMoreRows()">
+              Carregar mais
+            </button>
           </div>
         </div>
 
@@ -732,6 +736,7 @@
       charts: {},
       viewMode: 'count', // 'qtd' | 'count'
       tableTab: 'todos',
+      tableRowsShown: 10,
 
       init() {
         this.startClock();
@@ -981,6 +986,7 @@
         this.comparisonBase = this.allData.filter(matchesCategoria);
         this.filteredData = this.comparisonBase.filter(matchesTemporal);
         this.displayData = [...this.filteredData];
+        this.tableRowsShown = 10;
 
         this.populateFilters();
         this.updateDashboard();
@@ -1702,9 +1708,14 @@
         const tbody = document.getElementById('table-body');
         tbody.innerHTML = '';
 
-        const rows = [...this.displayData].sort(sortByDateAsc).slice(0, 50);
+        const sorted = [...this.displayData].sort((a, b) => parseDateBR(b.DATA) - parseDateBR(a.DATA));
+        const rows = sorted.slice(0, this.tableRowsShown);
+
         document.getElementById('table-count').textContent =
-          `${this.displayData.length} registros${this.displayData.length > 50 ? ' (mostrando 50)' : ''}`;
+          `${this.displayData.length} registros${this.displayData.length > this.tableRowsShown ? ` (mostrando ${this.tableRowsShown})` : ''}`;
+
+        const btn = document.getElementById('load-more-btn');
+        if (btn) btn.classList.toggle('hidden', this.displayData.length <= this.tableRowsShown);
 
         rows.forEach((item) => {
           const tr = document.createElement('tr');
@@ -1715,10 +1726,14 @@
             <td><span class="badge ${item.TIPO === 'Positivo' ? 'badge-positivo' : 'badge-negativo'}">${item.TIPO}</span></td>
             <td class="tabular-nums">${item.QTD}</td>
             <td>${item.CIA}</td>
-            <td><span class="text-xs text-beptur-200">${item.FONTE}</span></td>
           `;
           tbody.appendChild(tr);
         });
+      },
+
+      loadMoreRows() {
+        this.tableRowsShown += 10;
+        this.renderTableTodos();
       },
 
       aggregateBy(key) {
@@ -1748,7 +1763,7 @@
         const totalOcorrencias = this.displayData.length;
 
         const enriched = Object.entries(groups).map(([indicador, data]) => {
-          const totalQtd = data.items.reduce((a, i) => a + i.QTD, 0);BEPTur - Dados operacionais · Dashboard atualizado em tempo real
+          const totalQtd = data.items.reduce((a, i) => a + i.QTD, 0);
           return { indicador, data, totalQtd };
         });
 
