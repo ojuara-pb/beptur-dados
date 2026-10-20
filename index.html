@@ -265,6 +265,17 @@
       .tab-btn { padding: 0.375rem 0.625rem; font-size: 0.75rem; }
       .chart-max-btn { top: 0.5rem; right: 0.5rem; }
       .glass { padding: 0.875rem; }
+
+      #filters-body { display: none; }
+      #filters-body.mobile-open {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        background: rgba(10, 15, 35, 0.97);
+        padding: 1.25rem;
+        overflow-y: auto;
+      }
     }
   </style>
 </head>
@@ -311,7 +322,7 @@
 
       <!-- Filters & Controls -->
       <section class="glass rounded-2xl p-5 fade-in">
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center justify-between">
           <h2 class="text-lg font-semibold text-white flex items-center gap-2">
             <svg class="w-5 h-5 text-beptur-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
             Filtros e controles
@@ -320,13 +331,13 @@
             <button onclick="app.clearFilters()" class="text-xs px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-beptur-100 transition-colors">
               Limpar filtros
             </button>
-            <button id="filters-toggle" class="sm:hidden text-xs px-3 py-1.5 rounded-md bg-beptur-600 hover:bg-beptur-500 text-white transition-colors" onclick="app.toggleFiltersPanel()">
-              ▼ Abrir
+            <button class="sm:hidden text-xs px-3 py-1.5 rounded-md bg-beptur-600 hover:bg-beptur-500 text-white transition-colors" onclick="app.openFiltersModal()">
+              ☰ Filtros
             </button>
           </div>
         </div>
 
-        <div id="filters-body" class="hidden sm:block">
+        <div id="filters-body" class="hidden sm:block mt-4">
 
         <div class="mb-5 pb-4 border-b border-white/10">
           <h3 class="text-xs font-bold text-beptur-200 uppercase tracking-wider mb-3">Período</h3>
@@ -387,9 +398,12 @@
           <span class="text-xs font-medium text-beptur-200 self-center">Filtros ativos:</span>
         </div>
 
-        <div class="sm:hidden flex justify-end mt-4">
+        <div class="sm:hidden flex justify-end gap-2 mt-4">
           <button onclick="app.clearFilters()" class="text-xs px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-beptur-100 transition-colors">
             Limpar filtros
+          </button>
+          <button onclick="app.closeFiltersModal()" class="text-xs px-3 py-1.5 rounded-md bg-beptur-600 hover:bg-beptur-500 text-white transition-colors">
+            Fechar
           </button>
         </div>
         </div>
@@ -1034,11 +1048,14 @@
         this.renderActiveFilters();
       },
 
-      toggleFiltersPanel() {
-        const body = document.getElementById('filters-body');
-        const btn = document.getElementById('filters-toggle');
-        const open = body.classList.toggle('hidden');
-        btn.textContent = open ? '▼ Abrir' : '▲ Fechar';
+      openFiltersModal() {
+        document.getElementById('filters-body').classList.add('mobile-open');
+        document.body.style.overflow = 'hidden';
+      },
+
+      closeFiltersModal() {
+        document.getElementById('filters-body').classList.remove('mobile-open');
+        document.body.style.overflow = '';
       },
 
       clearFilters() {
