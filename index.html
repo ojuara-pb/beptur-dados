@@ -499,7 +499,12 @@
       <section class="glass rounded-2xl p-5 fade-in">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-base font-semibold text-white">Registros detalhados</h3>
-          <span id="table-count" class="text-xs text-beptur-200">0 registros</span>
+          <div class="flex items-center gap-3">
+            <button onclick="app.clearFilters()" class="text-xs px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-beptur-100 transition-colors">
+              Limpar filtros
+            </button>
+            <span id="table-count" class="text-xs text-beptur-200">0 registros</span>
+          </div>
         </div>
 
         <div class="flex flex-wrap gap-2 mb-4 border-b border-white/10 pb-3" id="table-tabs">
@@ -1111,6 +1116,7 @@
         }
 
         container.classList.toggle('hidden', !hasAny);
+        document.getElementById('floating-clear').classList.toggle('hidden', !hasAny);
       },
 
       makeClickHandler(field) {
@@ -2000,6 +2006,11 @@
     // Inicializa a aplicação quando o DOM estiver pronto
     document.addEventListener('DOMContentLoaded', () => app.init());
   </script>
+
+  <!-- Botão flutuante Limpar filtros -->
+  <button id="floating-clear" onclick="app.clearFilters()" class="hidden fixed bottom-4 right-4 z-40 px-4 py-2.5 rounded-full bg-beptur-600 hover:bg-beptur-500 text-white text-sm font-medium shadow-lg shadow-black/40 transition-colors">
+    Limpar filtros ×
+  </button>
 
   <!-- Modal de gráfico maximizado -->
   <div id="chart-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm p-4">
