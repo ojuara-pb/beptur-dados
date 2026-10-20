@@ -490,6 +490,7 @@
           <button class="tab-btn px-4 py-2 text-sm font-medium rounded-t-lg transition-colors" data-tab="indicador" onclick="app.switchTableTab('indicador')">Por Indicador</button>
           <button class="tab-btn px-4 py-2 text-sm font-medium rounded-t-lg transition-colors" data-tab="local" onclick="app.switchTableTab('local')">Por Local</button>
           <button class="tab-btn px-4 py-2 text-sm font-medium rounded-t-lg transition-colors" data-tab="cia" onclick="app.switchTableTab('cia')">Por CIA</button>
+          <button class="tab-btn px-4 py-2 text-sm font-medium rounded-t-lg transition-colors" data-tab="pivot" onclick="app.switchTableTab('pivot')">Indicador × Mês</button>
         </div>
 
         <div id="tab-todos" class="tab-content">
@@ -566,6 +567,17 @@
                 </tr>
               </thead>
               <tbody id="table-body-cia">
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="tab-pivot" class="tab-content hidden">
+          <div class="overflow-x-auto rounded-xl border border-white/10">
+            <table class="data-table" id="table-pivot">
+              <thead id="table-head-pivot">
+              </thead>
+              <tbody id="table-body-pivot">
               </tbody>
             </table>
           </div>
@@ -1703,6 +1715,7 @@
         else if (this.tableTab === 'indicador') this.renderTableIndicador();
         else if (this.tableTab === 'local') this.renderTableLocal();
         else if (this.tableTab === 'cia') this.renderTableCia();
+        else if (this.tableTab === 'pivot') this.renderTablePivot();
       },
 
       renderTableTodos() {
@@ -1837,6 +1850,73 @@
           `;
           tbody.appendChild(tr);
         });
+      },
+
+      renderTablePivot() {
+        const thead = document.getElementById('table-head-pivot');
+        const tbody = document.getElementById('table-body-pivot');
+        thead.innerHTML = '';
+        tbody.innerHTML = '';
+
+        const months = [...new Set(
+          this.displayData.map((i) => {
+            const ym = getYearMonth(i.DATA);
+            return ym ? `${String(ym.mes).padStart(2, '0')}/${ym.ano}` : null;
+          }).filter(Boolean)
+        )].sort((a, b) => {
+          const [ma, ya] = a.split('/').map(Number);
+          const [mb, yb] = b.split('/').map(Number);
+          return (ya - yb) || (ma - mb);
+        });
+
+        const pivot = {};
+        this.displayData.forEach((item) => {
+          const ym = getYearMonth(item.DATA);
+          if (!ym) return;
+          const key = `${String(ym.mes).padStart(2, '0')}/${ym.ano}`;
+          if (!pivot[item.INDICADOR]) pivot[item.INDICADOR] = {};
+          pivot[item.INDICADOR][key] = (pivot[item.INDICADOR][key] || 0) + item.QTD;
+        });
+
+        const indicadores = Object.entries(pivot)
+          .map(([ind, byMonth]) => ({
+            ind,
+            byMonth,
+            total: Object.values(byMonth).reduce((a, v) => a + v, 0)
+          }))
+          .sort((a, b) => b.total - a.total);
+
+        const colTotals = months.map((m) =>
+          indicadores.reduce((a, r) => a + (r.byMonth[m] || 0), 0)
+        );
+        const grandTotal = colTotals.reduce((a, v) => a + v, 0);
+
+        const trHead = document.createElement('tr');
+        trHead.innerHTML = `<th>Indicador</th>` +
+          months.map((m) => `<th class="tabular-nums">${formatMesRef(m)}</th>`).join('') +
+          `<th class="tabular-nums">Total geral</th>`;
+        thead.appendChild(trHead);
+
+        indicadores.forEach((r) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${r.ind}</td>` +
+            months.map((m) => {
+              const v = r.byMonth[m];
+              return `<td class="tabular-nums">${v ? formatNumber(v) : ''}</td>`;
+            }).join('') +
+            `<td class="tabular-nums font-bold">${formatNumber(r.total)}</td>`;
+          tbody.appendChild(tr);
+        });
+
+        const trFoot = document.createElement('tr');
+        trFoot.className = 'border-t-2 border-white/20 font-bold';
+        trFoot.innerHTML = `<td>Total geral</td>` +
+          colTotals.map((v) => `<td class="tabular-nums">${formatNumber(v)}</td>`).join('') +
+          `<td class="tabular-nums">${formatNumber(grandTotal)}</td>`;
+        tbody.appendChild(trFoot);
+
+        document.getElementById('table-count').textContent =
+          `${indicadores.length} indicadores × ${months.length} meses`;
       },
 
       openChartModal(chartId) {
