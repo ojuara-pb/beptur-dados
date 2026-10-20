@@ -316,11 +316,8 @@
           <h2 class="text-lg font-semibold text-white flex items-center gap-2">
             <svg class="w-5 h-5 text-beptur-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
             Filtros e controles
-            <svg id="filters-arrow" class="w-4 h-4 text-beptur-300 transition-transform" style="transform: rotate(-90deg)" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
           </h2>
-          <button onclick="event.stopPropagation(); app.clearFilters()" class="text-xs px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-beptur-100 transition-colors">
-            Limpar filtros
-          </button>
+          <svg id="filters-arrow" class="w-5 h-5 text-beptur-300 transition-transform" style="transform: rotate(-90deg)" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
         </div>
 
         <div id="filters-body" class="mt-4 hidden">
@@ -393,6 +390,13 @@
 
         </div>
       </section>
+
+      <!-- Botão Limpar filtros (sempre visível, fora do card de filtros) -->
+      <div class="flex justify-end fade-in">
+        <button onclick="app.clearFilters()" class="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-beptur-100 text-sm font-medium transition-colors border border-white/15">
+          Limpar filtros ×
+        </button>
+      </div>
 
       <!-- KPIs -->
       <section class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 fade-in">
@@ -494,7 +498,7 @@
 
         <!-- Ranking indicadores sem drogas -->
         <div class="glass chart-card rounded-2xl p-5">
-          <button class="chart-max-btn" onclick="app.openChartModal('indicador-sec')" title="Maximizar">
+          <button class="chart-max-btn" onclick="app.openChartModal('indicadorSec')" title="Maximizar">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
           </button>
           <h3 class="text-base font-semibold text-white mb-4">Indicadores (sem Drogas Apreendidas)</h3>
@@ -776,6 +780,7 @@
       filteredData: [],
       displayData: [],
       charts: {},
+      chartCfgs: {},
       viewMode: 'count', // 'qtd' | 'count'
       tableTab: 'todos',
       tableRowsShown: 10,
@@ -1321,6 +1326,11 @@
         }
       },
 
+      makeChart(key, ctx, config) {
+        this.chartCfgs[key] = config;
+        return new Chart(ctx, config);
+      },
+
       renderCharts() {
         this.renderEvolucao();
         this.renderMensal();
@@ -1379,7 +1389,7 @@
         const ctx = document.getElementById('chart-evolucao').getContext('2d');
         if (this.charts.evolucao) this.charts.evolucao.destroy();
 
-        this.charts.evolucao = new Chart(ctx, {
+        this.charts.evolucao = this.makeChart('evolucao', ctx, {
           type: 'line',
           data: {
             labels,
@@ -1443,7 +1453,7 @@
         const ctx = document.getElementById('chart-mensal').getContext('2d');
         if (this.charts.mensal) this.charts.mensal.destroy();
 
-        this.charts.mensal = new Chart(ctx, {
+        this.charts.mensal = this.makeChart('mensal', ctx, {
           type: 'bar',
           data: { labels, datasets },
           options: {
@@ -1491,7 +1501,7 @@
         const ctx = document.getElementById('chart-trimestral').getContext('2d');
         if (this.charts.trimestral) this.charts.trimestral.destroy();
 
-        this.charts.trimestral = new Chart(ctx, {
+        this.charts.trimestral = this.makeChart('trimestral', ctx, {
           type: 'bar',
           data: { labels, datasets },
           options: {
@@ -1521,7 +1531,7 @@
         const ctx = document.getElementById('chart-locais').getContext('2d');
         if (this.charts.locais) this.charts.locais.destroy();
 
-        this.charts.locais = new Chart(ctx, {
+        this.charts.locais = this.makeChart('locais', ctx, {
           type: 'bar',
           data: {
             labels,
@@ -1568,7 +1578,7 @@
         const ctx = document.getElementById('chart-cia').getContext('2d');
         if (this.charts.cia) this.charts.cia.destroy();
 
-        this.charts.cia = new Chart(ctx, {
+        this.charts.cia = this.makeChart('cia', ctx, {
           type: 'doughnut',
           data: {
             labels,
@@ -1613,7 +1623,7 @@
         const ctx = document.getElementById('chart-indicador').getContext('2d');
         if (this.charts.indicador) this.charts.indicador.destroy();
 
-        this.charts.indicador = new Chart(ctx, {
+        this.charts.indicador = this.makeChart('indicador', ctx, {
           type: 'bar',
           data: {
             labels,
@@ -1662,7 +1672,7 @@
         const ctx = document.getElementById('chart-tipo').getContext('2d');
         if (this.charts.tipo) this.charts.tipo.destroy();
 
-        this.charts.tipo = new Chart(ctx, {
+        this.charts.tipo = this.makeChart('tipo', ctx, {
           type: 'bar',
           data: {
             labels,
@@ -1719,7 +1729,7 @@
         const ctx = document.getElementById('chart-indicador-sec').getContext('2d');
         if (this.charts.indicadorSec) this.charts.indicadorSec.destroy();
 
-        this.charts.indicadorSec = new Chart(ctx, {
+        this.charts.indicadorSec = this.makeChart('indicadorSec', ctx, {
           type: 'bar',
           data: {
             labels,
@@ -1978,13 +1988,22 @@
         const modalCanvas = document.getElementById('modal-chart');
         const modalTitle = document.getElementById('modal-title');
 
-        if (this.charts.modal) this.charts.modal.destroy();
+        if (this.charts.modal) {
+          this.charts.modal.destroy();
+          this.charts.modal = null;
+        }
 
         modalTitle.textContent = original.options?.plugins?.title?.text ||
           (original.canvas?.closest('.chart-card')?.querySelector('h3')?.textContent || 'Gráfico');
 
+        const srcConfig = this.chartCfgs[chartId];
+        const clonedConfig = JSON.parse(JSON.stringify(srcConfig || {}, (k, v) => (typeof v === 'function' ? undefined : v)));
+        if (srcConfig?.options?.onClick && clonedConfig.options) {
+          clonedConfig.options.onClick = srcConfig.options.onClick;
+        }
+
         const ctx = modalCanvas.getContext('2d');
-        this.charts.modal = new Chart(ctx, original.config);
+        this.charts.modal = new Chart(ctx, clonedConfig);
 
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
