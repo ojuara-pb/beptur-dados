@@ -272,9 +272,35 @@
         position: fixed;
         inset: 0;
         z-index: 60;
-        background: rgba(10, 15, 35, 0.97);
-        padding: 1.25rem;
+        background: rgba(10, 15, 35, 0.98);
+        padding: 1rem;
         overflow-y: auto;
+      }
+      #filters-body.mobile-open::before {
+        content: 'Filtros e controles';
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #fff;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid rgba(255,255,255,0.15);
+      }
+      #filters-body.mobile-open .mobile-close-x {
+        display: block;
+      }
+      .mobile-close-x { display: none; }
+      #filters-body.mobile-open select,
+      #filters-body.mobile-open input[type="date"] {
+        font-size: 1rem;
+        padding: 0.75rem;
+      }
+      #filters-body.mobile-open > div {
+        max-width: 480px;
+        margin-left: auto;
+        margin-right: auto;
       }
     }
   </style>
@@ -338,6 +364,8 @@
         </div>
 
         <div id="filters-body" class="hidden sm:block mt-4">
+        <button class="mobile-close-x absolute top-4 right-4 text-white text-2xl leading-none" onclick="app.closeFiltersModal()">&times;</button>
+
 
         <div class="mb-5 pb-4 border-b border-white/10">
           <h3 class="text-xs font-bold text-beptur-200 uppercase tracking-wider mb-3">Período</h3>
