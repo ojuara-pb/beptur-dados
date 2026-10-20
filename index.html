@@ -1049,12 +1049,22 @@
       },
 
       openFiltersModal() {
-        document.getElementById('filters-body').classList.add('mobile-open');
+        const body = document.getElementById('filters-body');
+        if (!this._filtersParent) {
+          this._filtersParent = body.parentElement;
+          this._filtersNext = body.nextSibling;
+        }
+        document.body.appendChild(body);
+        body.classList.add('mobile-open');
         document.body.style.overflow = 'hidden';
       },
 
       closeFiltersModal() {
-        document.getElementById('filters-body').classList.remove('mobile-open');
+        const body = document.getElementById('filters-body');
+        body.classList.remove('mobile-open');
+        if (this._filtersParent) {
+          this._filtersParent.insertBefore(body, this._filtersNext);
+        }
         document.body.style.overflow = '';
       },
 
