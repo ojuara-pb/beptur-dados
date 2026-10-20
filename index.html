@@ -266,42 +266,6 @@
       .chart-max-btn { top: 0.5rem; right: 0.5rem; }
       .glass { padding: 0.875rem; }
 
-      #filters-body { display: none; }
-      #filters-body.mobile-open {
-        display: block;
-        position: fixed;
-        inset: 0;
-        z-index: 60;
-        background: rgba(10, 15, 35, 0.98);
-        padding: 1rem;
-        overflow-y: auto;
-      }
-      #filters-body.mobile-open::before {
-        content: 'Filtros e controles';
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: #fff;
-        margin-bottom: 1rem;
-        padding-bottom: 0.75rem;
-        border-bottom: 1px solid rgba(255,255,255,0.15);
-      }
-      #filters-body.mobile-open .mobile-close-x {
-        display: block;
-      }
-      .mobile-close-x { display: none; }
-      #filters-body.mobile-open select,
-      #filters-body.mobile-open input[type="date"] {
-        font-size: 1rem;
-        padding: 0.75rem;
-      }
-      #filters-body.mobile-open > div {
-        max-width: 480px;
-        margin-left: auto;
-        margin-right: auto;
-      }
     }
   </style>
 </head>
@@ -353,18 +317,12 @@
             <svg class="w-5 h-5 text-beptur-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
             Filtros e controles
           </h2>
-          <div class="flex items-center gap-2">
-            <button onclick="app.clearFilters()" class="text-xs px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-beptur-100 transition-colors">
-              Limpar filtros
-            </button>
-            <button class="sm:hidden text-xs px-3 py-1.5 rounded-md bg-beptur-600 hover:bg-beptur-500 text-white transition-colors" onclick="app.openFiltersModal()">
-              ☰ Filtros
-            </button>
-          </div>
+          <button onclick="app.clearFilters()" class="text-xs px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-beptur-100 transition-colors">
+            Limpar filtros
+          </button>
         </div>
 
-        <div id="filters-body" class="hidden sm:block mt-4">
-        <button class="mobile-close-x absolute top-4 right-4 text-white text-2xl leading-none" onclick="app.closeFiltersModal()">&times;</button>
+        <div id="filters-body" class="mt-4">
 
 
         <div class="mb-5 pb-4 border-b border-white/10">
@@ -426,14 +384,6 @@
           <span class="text-xs font-medium text-beptur-200 self-center">Filtros ativos:</span>
         </div>
 
-        <div class="sm:hidden flex justify-end gap-2 mt-4">
-          <button onclick="app.clearFilters()" class="text-xs px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-beptur-100 transition-colors">
-            Limpar filtros
-          </button>
-          <button onclick="app.closeFiltersModal()" class="text-xs px-3 py-1.5 rounded-md bg-beptur-600 hover:bg-beptur-500 text-white transition-colors">
-            Fechar
-          </button>
-        </div>
         </div>
       </section>
 
@@ -1074,26 +1024,6 @@
         this.populateFilters();
         this.updateDashboard();
         this.renderActiveFilters();
-      },
-
-      openFiltersModal() {
-        const body = document.getElementById('filters-body');
-        if (!this._filtersParent) {
-          this._filtersParent = body.parentElement;
-          this._filtersNext = body.nextSibling;
-        }
-        document.body.appendChild(body);
-        body.classList.add('mobile-open');
-        document.body.style.overflow = 'hidden';
-      },
-
-      closeFiltersModal() {
-        const body = document.getElementById('filters-body');
-        body.classList.remove('mobile-open');
-        if (this._filtersParent) {
-          this._filtersParent.insertBefore(body, this._filtersNext);
-        }
-        document.body.style.overflow = '';
       },
 
       clearFilters() {
