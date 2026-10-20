@@ -312,12 +312,13 @@
 
       <!-- Filters & Controls -->
       <section class="glass rounded-2xl p-5 fade-in">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between cursor-pointer select-none" onclick="app.toggleFilters()">
           <h2 class="text-lg font-semibold text-white flex items-center gap-2">
             <svg class="w-5 h-5 text-beptur-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
             Filtros e controles
+            <svg id="filters-arrow" class="w-4 h-4 text-beptur-300 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
           </h2>
-          <button onclick="app.clearFilters()" class="text-xs px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-beptur-100 transition-colors">
+          <button onclick="event.stopPropagation(); app.clearFilters()" class="text-xs px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-beptur-100 transition-colors">
             Limpar filtros
           </button>
         </div>
@@ -382,6 +383,15 @@
 
         <div id="active-filters" class="flex flex-wrap gap-2 hidden">
           <span class="text-xs font-medium text-beptur-200 self-center">Filtros ativos:</span>
+        </div>
+
+        <div class="flex items-center gap-2 mt-4 pt-4 border-t border-white/10">
+          <button onclick="app.clearFilters()" class="px-4 py-2 rounded-md bg-white/10 hover:bg-white/20 text-beptur-100 text-sm transition-colors">
+            Limpar filtros
+          </button>
+          <button onclick="app.toggleFilters()" class="px-4 py-2 rounded-md bg-beptur-600 hover:bg-beptur-500 text-white text-sm font-medium transition-colors">
+            ▲ Retrair
+          </button>
         </div>
 
         </div>
@@ -1039,6 +1049,13 @@
         this.applyFilters();
       },
 
+      toggleFilters() {
+        const body = document.getElementById('filters-body');
+        const arrow = document.getElementById('filters-arrow');
+        body.classList.toggle('hidden');
+        arrow.style.transform = body.classList.contains('hidden') ? 'rotate(-90deg)' : '';
+      },
+
       filterFrom(field, value) {
         const map = {
           DATA: 'period',
@@ -1063,6 +1080,8 @@
             if (select) select.value = value;
           }
         }
+        const body = document.getElementById('filters-body');
+        if (body.classList.contains('hidden')) this.toggleFilters();
         this.applyFilters();
       },
 
