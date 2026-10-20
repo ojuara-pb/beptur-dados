@@ -1041,6 +1041,10 @@
         this.populateFilters();
         this.updateDashboard();
         this.renderActiveFilters();
+
+        if (this.charts.modal && this.modalChartId) {
+          this.openChartModal(this.modalChartId);
+        }
       },
 
       clearFilters() {
@@ -1983,6 +1987,7 @@
       openChartModal(chartId) {
         const original = this.charts[chartId];
         if (!original) return;
+        this.modalChartId = chartId;
 
         const modal = document.getElementById('chart-modal');
         const modalCanvas = document.getElementById('modal-chart');
@@ -2017,6 +2022,7 @@
         const modal = document.getElementById('chart-modal');
         modal.classList.add('hidden');
         document.body.style.overflow = '';
+        this.modalChartId = null;
         if (this.charts.modal) {
           this.charts.modal.destroy();
           this.charts.modal = null;
