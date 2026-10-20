@@ -1117,6 +1117,14 @@
           container.appendChild(chip);
         });
 
+        if (hasAny) {
+          const clearAll = document.createElement('button');
+          clearAll.className = 'filter-chip';
+          clearAll.innerHTML = 'Limpar tudo ×';
+          clearAll.addEventListener('click', () => this.clearFilters());
+          container.appendChild(clearAll);
+        }
+
         container.classList.toggle('hidden', !hasAny);
       },
 
@@ -2017,6 +2025,11 @@
       </div>
       <div class="flex-1 min-h-[500px]">
         <canvas id="modal-chart"></canvas>
+      </div>
+      <div class="flex justify-end gap-2 mt-4 pt-4 border-t border-white/10">
+        <button onclick="app.clearFilters()" class="text-xs px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-beptur-100 transition-colors">
+          Limpar filtros
+        </button>
       </div>
     </div>
   </div>
