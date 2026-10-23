@@ -1522,6 +1522,21 @@
         });
       },
 
+      colorMapFor(key) {
+        if (!this._colorMaps) this._colorMaps = {};
+        if (!this._colorMaps[key]) {
+          const totals = {};
+          this.allData.forEach((item) => {
+            totals[item[key]] = (totals[item[key]] || 0) + 1;
+          });
+          const sorted = Object.keys(totals).sort((a, b) => totals[b] - totals[a]);
+          const map = {};
+          sorted.forEach((k, i) => { map[k] = palette[i % palette.length]; });
+          this._colorMaps[key] = map;
+        }
+        return this._colorMaps[key];
+      },
+
       renderLocais() {
         const byLocal = {};
         this.displayData.forEach((item) => {
@@ -1531,6 +1546,7 @@
         const locais = Object.entries(byLocal).sort((a, b) => b[1] - a[1]).slice(0, 5);
         const labels = locais.map(([k]) => k);
         const values = locais.map(([, v]) => v);
+        const cmap = this.colorMapFor('LOCAL');
 
         const ctx = document.getElementById('chart-locais').getContext('2d');
         if (this.charts.locais) this.charts.locais.destroy();
@@ -1542,7 +1558,7 @@
             datasets: [{
               label: this.getDatasetLabel(),
               data: values,
-              backgroundColor: palette.slice(0, labels.length),
+              backgroundColor: labels.map((l) => cmap[l]),
               borderRadius: 6,
               borderSkipped: false
             }]
@@ -1578,6 +1594,7 @@
         const cias = Object.entries(byCia).sort((a, b) => b[1] - a[1]);
         const labels = cias.map(([k]) => k);
         const values = cias.map(([, v]) => v);
+        const cmap = this.colorMapFor('CIA');
 
         const ctx = document.getElementById('chart-cia').getContext('2d');
         if (this.charts.cia) this.charts.cia.destroy();
@@ -1588,7 +1605,7 @@
             labels,
             datasets: [{
               data: values,
-              backgroundColor: palette.slice(0, labels.length),
+              backgroundColor: labels.map((l) => cmap[l]),
               borderWidth: 2,
               borderColor: 'rgba(15, 26, 61, 0.8)',
               hoverOffset: 8
@@ -1623,6 +1640,7 @@
         const indicadores = Object.entries(byInd).sort((a, b) => b[1] - a[1]);
         const labels = indicadores.map(([k]) => k);
         const values = indicadores.map(([, v]) => v);
+        const cmap = this.colorMapFor('INDICADOR');
 
         const ctx = document.getElementById('chart-indicador').getContext('2d');
         if (this.charts.indicador) this.charts.indicador.destroy();
@@ -1634,7 +1652,7 @@
             datasets: [{
               label: this.getDatasetLabel(),
               data: values,
-              backgroundColor: labels.map((_, i) => palette[i % palette.length]),
+              backgroundColor: labels.map((l) => cmap[l]),
               borderRadius: 6,
               borderSkipped: false
             }]
