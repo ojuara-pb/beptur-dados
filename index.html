@@ -889,8 +889,12 @@
         }
       },
 
+      occurrenceValue(item) {
+        return /drogas/i.test(item.INDICADOR) ? 1 : (item.QTD || 1);
+      },
+
       getValue(item) {
-        return this.viewMode === 'qtd' ? item.QTD : 1;
+        return this.viewMode === 'qtd' ? item.QTD : this.occurrenceValue(item);
       },
 
       getDatasetLabel() {
@@ -1841,7 +1845,7 @@
           const val = this.getValue(item);
           groups[k].items.push(item);
           groups[k].total += val;
-          groups[k].count += 1;
+          groups[k].count += this.occurrenceValue(item);
         });
         return groups;
       },
@@ -1857,7 +1861,7 @@
         tbody.innerHTML = '';
 
         const groups = this.aggregateBy('INDICADOR');
-        const totalOcorrencias = this.displayData.length;
+        const totalOcorrencias = this.displayData.reduce((a, i) => a + this.occurrenceValue(i), 0);
 
         const enriched = Object.entries(groups).map(([indicador, data]) => {
           const totalQtd = data.items.reduce((a, i) => a + i.QTD, 0);
